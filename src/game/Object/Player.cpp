@@ -2674,14 +2674,37 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 // Current player experience not update (must be update by caller)
 void Player::GiveLevel(uint32 level)
 {
+    bool reCalc = false;
     uint8 oldLevel = getLevel();
     if (level == getLevel())
+    {
+        reCalc = true;
+    }
+
+    float RewardStateQuest = sWorld.getConfig(CONFIG_FLOAG_REWARD_STATE_QUEST);
+    if (RewardStateQuest > 0 && m_rewardQuestNum > 0)
+    {
+        uint8 rewardState = uint8((m_rewardQuestNum / RewardStateQuest));
+        if (m_rewardState < rewardState)
+        {
+            m_rewardState = rewardState;
+            reCalc = true;
+        }
+    }
+
+    if (!reCalc)
     {
         return;
     }
 
     PlayerLevelInfo info;
     sObjectMgr.GetPlayerLevelInfo(getRace(), getClass(), level, &info);
+    if (m_rewardState > 0) {
+        for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)         // Stats loop (0-4)
+        {
+            info.stats[i] += m_rewardState;
+        }
+    }
 
     PlayerClassLevelInfo classInfo;
     sObjectMgr.GetPlayerClassLevelInfo(getClass(), level, &classInfo);
@@ -14916,6 +14939,9 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
     {
         itr->second->ApplyOrRemoveSpellIfCan(this, zone, area, false);
     }
+
+    m_rewardQuestNum++;
+    GiveLevel(getLevel());
 }
 
 // TODO be more specific at callers about quest fail reason. Also, quest "fails" when either picking up or giving out is unsuccessful.
@@ -16308,6 +16334,19 @@ void Player::_LoadIntoDataField(const char* data, uint32 startOffset, uint32 cou
 
 bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 {
+    if (sWorld.getConfig(CONFIG_FLOAG_REWARD_STATE_QUEST) > 0)
+    {
+        m_rewardState = 0;
+        m_rewardQuestNum = 0;
+        QueryResult *result = CharacterDatabase.PQuery("SELECT COUNT(*) FROM `character_queststatus` WHERE `guid`='%u' AND rewarded = 1", GetGUIDLow());
+        if (result)
+        {
+            Field* fields = result->Fetch();
+            m_rewardQuestNum = fields[0].GetUInt32();
+        }
+    }
+    
+
     //        0     1        2     3     4      5       6      7   8      9            10            11
     // SELECT guid, account, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,
     // 12          13          14          15   16           17        18         19         20         21          22           23                 24

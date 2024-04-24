@@ -1084,6 +1084,13 @@ class Player : public Unit
         time_t m_logintime;
         time_t m_Last_tick;
 
+        uint8 m_rewardState;
+        uint32 m_rewardQuestNum;
+        uint32 GetRewardState()
+        {
+            return m_rewardState;
+        }
+
         uint32 m_Played_time[MAX_PLAYED_TIME_INDEX];
         uint32 GetTotalPlayedTime()
         {
