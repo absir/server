@@ -2676,7 +2676,7 @@ void Player::GiveLevel(uint32 level)
 {
     bool reCalc = false;
     uint8 oldLevel = getLevel();
-    if (level == getLevel())
+    if (level != getLevel())
     {
         reCalc = true;
     }

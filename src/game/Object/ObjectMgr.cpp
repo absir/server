@@ -4882,11 +4882,16 @@ void ObjectMgr::LoadGossipText()
         }
 
         GossipText& gText = mGossipText[Text_ID];
-
         for (int i = 0; i < MAX_GOSSIP_TEXT_OPTIONS; ++i)
         {
             gText.Options[i].Text_0           = fields[cic++].GetCppString();
             gText.Options[i].Text_1           = fields[cic++].GetCppString();
+            if(i == 0 && gText.Options[i].Text_0.empty() && gText.Options[i].Text_1.empty())
+            {
+                mGossipText.erase(Text_ID);
+                break;
+                // gText.Options[i].Text_0 = "Greetings $N";
+            }
 
             gText.Options[i].Language         = fields[cic++].GetUInt32();
             gText.Options[i].Probability      = fields[cic++].GetFloat();
