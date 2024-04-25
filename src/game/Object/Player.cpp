@@ -143,6 +143,17 @@ void SendRewardStateQuest(Player* player, int type)
     ChatHandler(player).SendSysMessage(c);
 }
 
+void ReCalcRewardState(Player* player, PlayerLevelInfo *info)
+{
+    uint8 m_rewardState = player->m_rewardState;
+    if (m_rewardState > 0) {
+        for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)         // Stats loop (0-4)
+        {
+            info->stats[i] += m_rewardState;
+        }
+    }
+}
+
 // corpse reclaim times
 #define DEATH_EXPIRE_STEP (5*MINUTE)
 #define MAX_DEATH_COUNT 3
@@ -2715,12 +2726,8 @@ void Player::GiveLevel(uint32 level)
 
     PlayerLevelInfo info;
     sObjectMgr.GetPlayerLevelInfo(getRace(), getClass(), level, &info);
-    if (m_rewardState > 0) {
-        for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)         // Stats loop (0-4)
-        {
-            info.stats[i] += m_rewardState;
-        }
-    }
+
+    ReCalcRewardState(this, &info);
 
     PlayerClassLevelInfo classInfo;
     sObjectMgr.GetPlayerClassLevelInfo(getClass(), level, &classInfo);
@@ -2863,6 +2870,8 @@ void Player::InitStatsForLevel(bool reapplyMods)
 
     PlayerLevelInfo info;
     sObjectMgr.GetPlayerLevelInfo(getRace(), getClass(), getLevel(), &info);
+
+    ReCalcRewardState(this, &info);
 
     SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr.GetXPForLevel(getLevel()));
 
