@@ -14896,6 +14896,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
     }
 
     q_status.m_rewarded = true;
+    bool questNew = q_status.uState == QUEST_NEW;
     if (q_status.uState != QUEST_NEW)
     {
         q_status.uState = QUEST_CHANGED;
@@ -14956,7 +14957,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
         itr->second->ApplyOrRemoveSpellIfCan(this, zone, area, false);
     }
 
-    if (sWorld.getConfig(CONFIG_FLOAG_REWARD_STATE_QUEST) > 0)
+    if (questNew && q_status.m_rewarded && sWorld.getConfig(CONFIG_FLOAG_REWARD_STATE_QUEST) > 0)
     {
         m_rewardQuestNum++;
         //SendRewardStateQuest(this, 0);
