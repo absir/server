@@ -128,6 +128,21 @@ enum CharacterFlags
     CHARACTER_FLAG_UNK32                = 0x80000000
 };
 
+void SendRewardStateQuest(Player* player, int type)
+{
+    char c[128];
+    if (type == 0)
+    {
+        sprintf(c, "RewardQuestNum %d", player->m_rewardQuestNum);
+    } 
+    else
+    {
+        sprintf(c, "RewardState %d", player->m_rewardState);
+    }
+
+    ChatHandler(player).SendSysMessage(c);
+}
+
 // corpse reclaim times
 #define DEATH_EXPIRE_STEP (5*MINUTE)
 #define MAX_DEATH_COUNT 3
@@ -2688,6 +2703,7 @@ void Player::GiveLevel(uint32 level)
         if (m_rewardState < rewardState)
         {
             m_rewardState = rewardState;
+            SendRewardStateQuest(this, 1);
             reCalc = true;
         }
     }
@@ -14940,8 +14956,12 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
         itr->second->ApplyOrRemoveSpellIfCan(this, zone, area, false);
     }
 
-    m_rewardQuestNum++;
-    GiveLevel(getLevel());
+    if (sWorld.getConfig(CONFIG_FLOAG_REWARD_STATE_QUEST) > 0)
+    {
+        m_rewardQuestNum++;
+        //SendRewardStateQuest(this, 0);
+        GiveLevel(getLevel());
+    }
 }
 
 // TODO be more specific at callers about quest fail reason. Also, quest "fails" when either picking up or giving out is unsuccessful.
@@ -16334,19 +16354,6 @@ void Player::_LoadIntoDataField(const char* data, uint32 startOffset, uint32 cou
 
 bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 {
-    if (sWorld.getConfig(CONFIG_FLOAG_REWARD_STATE_QUEST) > 0)
-    {
-        m_rewardState = 0;
-        m_rewardQuestNum = 0;
-        QueryResult *result = CharacterDatabase.PQuery("SELECT COUNT(*) FROM `character_queststatus` WHERE `guid`='%u' AND rewarded = 1", GetGUIDLow());
-        if (result)
-        {
-            Field* fields = result->Fetch();
-            m_rewardQuestNum = fields[0].GetUInt32();
-        }
-    }
-    
-
     //        0     1        2     3     4      5       6      7   8      9            10            11
     // SELECT guid, account, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,
     // 12          13          14          15   16           17        18         19         20         21          22           23                 24
@@ -16913,6 +16920,18 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
                     SetAcceptWhispers(true);
                 }
                 break;
+        }
+    }
+
+    if (sWorld.getConfig(CONFIG_FLOAG_REWARD_STATE_QUEST) > 0)
+    {
+        m_rewardState = 0;
+        m_rewardQuestNum = 0;
+        result = CharacterDatabase.PQuery("SELECT COUNT(*) FROM `character_queststatus` WHERE `guid`='%u' AND rewarded = 1", GetGUIDLow());
+        if (result)
+        {
+            Field* fields = result->Fetch();
+            m_rewardQuestNum = fields[0].GetUInt32();
         }
     }
 
